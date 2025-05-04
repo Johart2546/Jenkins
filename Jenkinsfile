@@ -1,26 +1,48 @@
 pipeline {
     agent any
+
+    environment {
+        FIREBASE_TOKEN = credentials('FIREBASE_TOKEN')
+    }
+
     stages {
-        stage('Clone') {
+        stage('Checkout') {
             steps {
-                echo "Cloning repo..."
-                checkout scm
+                git branch: 'main', url: 'https://github.com/Johart2546/Jenkins.git'
             }
         }
-        stage('Build') {
+
+        stage('Install Dependencies') {
             steps {
-                echo "Building project..."
+                sh 'npm install'
             }
         }
-        stage('Test') {
+
+        stage('Build Project') {
             steps {
-                echo "Running tests..."
+                sh 'npm run build' // สำหรับ Vite จะสร้างไฟล์ใน /dist
             }
         }
-        stage('Deploy') {
+
+        stage('Deploy to Firebase') {
             steps {
-                echo "Deploying..."
+                sh 'firebase deploy --token $FIREBASE_TOKEN --non-interactive'
             }
+        }
+    }
+
+    post {
+        success {
+            slackSend(
+                channel: '#your-channel',
+                message: "Deploy สำเร็จ: ${env.BUILD_URL}\nHosting URL: https://jenkins-2xd8.web.app"
+            )
+        }
+        failure {
+            slackSend(
+                channel: '#your-channel',
+                message: "Deploy ล้มเหลว: ${env.BUILD_URL}"
+            )
         }
     }
 }
