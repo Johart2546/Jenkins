@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         FIREBASE_TOKEN = credentials('FIREBASE_TOKEN')
-        PATH = "/usr/local/bin:/usr/bin:/bin:/usr/local/nodejs/bin"  
+        PATH = "/usr/local/bin:/usr/bin:/bin:/usr/local/nodejs/bin"  // เพิ่ม path ของ npm
     }
 
     stages {
