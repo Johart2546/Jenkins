@@ -2,30 +2,36 @@ pipeline {
     agent any
 
     environment {
-        FIREBASE_TOKEN = credentials('FIREBASE_TOKEN')
+        FIREBASE_TOKEN = credentials('FIREBASE_TOKEN') // ต้องตั้งค่า credential ใน Jenkins ก่อน
     }
 
     stages {
-        stage('Checkout') {
+        stage('Clone') {
             steps {
-                git branch: 'main', url: 'https://github.com/Johart2546/Jenkins.git'
+                echo 'Cloning repo...'
+                git branch: 'main', 
+                url: 'https://github.com/Johart2546/Jenkins.git'
             }
         }
 
-        stage('Install Dependencies') {
+        stage('Build') {
             steps {
+                echo 'Building project...'
                 sh 'npm install'
+                sh 'npm run build' // สำหรับ Vite/React
             }
         }
 
-        stage('Build Project') {
+        stage('Test') {
             steps {
-                sh 'npm run build' // สำหรับ Vite จะสร้างไฟล์ใน /dist
+                echo 'Running tests...'
+                sh 'npm test' // ถ้ามี test script
             }
         }
 
-        stage('Deploy to Firebase') {
+        stage('Deploy') {
             steps {
+                echo 'Deploying to Firebase...'
                 sh 'firebase deploy --token $FIREBASE_TOKEN --non-interactive'
             }
         }
@@ -33,16 +39,11 @@ pipeline {
 
     post {
         success {
-            slackSend(
-                channel: '#your-channel',
-                message: "Deploy สำเร็จ: ${env.BUILD_URL}\nHosting URL: https://jenkins-2xd8.web.app"
-            )
+            echo 'Deploy สำเร็จ!'
+            // สามารถเพิ่ม slack notification หรือ email ได้ที่นี่
         }
         failure {
-            slackSend(
-                channel: '#your-channel',
-                message: "Deploy ล้มเหลว: ${env.BUILD_URL}"
-            )
+            echo 'Deploy ล้มเหลว!'
         }
     }
 }
