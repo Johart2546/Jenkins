@@ -14,7 +14,7 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                sh 'npm install'  // ใช้ npm ไม่ใช่ rpm
+                sh 'npm install'  // ใช้ npm ไม่ใช่ rpmmmmmmmm
             }
         }
 
