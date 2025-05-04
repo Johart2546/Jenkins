@@ -3,6 +3,7 @@ pipeline {
 
     environment {
         FIREBASE_TOKEN = credentials('FIREBASE_TOKEN')
+        PATH = "/usr/local/bin:/usr/bin:/bin:/usr/local/nodejs/bin:$PATH"  // เพิ่ม path ของ npm
     }
 
     stages {
@@ -14,14 +15,17 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                sh 'npm install'  // ใช้ npm ไม่ใช่ rpm
+                sh '''
+                    echo "PATH: $PATH"  // สำหรับ debug
+                    which npm         // ตรวจสอบ path ของ npm
+                    npm install
+                '''
             }
         }
 
         stage('Build Project') {
             steps {
                 sh 'npm run build'
-                // ตรวจสอบว่า build สำเร็จ
                 script {
                     if (!fileExists('dist/index.html')) {
                         error('Build failed: dist/index.html not found!')
