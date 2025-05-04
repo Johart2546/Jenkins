@@ -1,26 +1,40 @@
 pipeline {
     agent any
+    
+    // ตั้งค่าให้ Jenkins ตรวจสอบการเปลี่ยนแปลงทุก 1 นาที (Fallback หาก Webhook ล้มเหลว)
+    triggers { pollSCM('H/1 * * * *') } 
 
     environment {
-        FIREBASE_TOKEN = credentials('FIREBASE_TOKEN')
+        FIREBASE_TOKEN = credentials('FIREBASE_TOKEN') // ต้องตั้งค่าใน Jenkins ด้วย
     }
 
     stages {
-        stage('Checkout') {
+        stage('Checkout Code') {
             steps {
-                git branch: 'main', url: 'https://github.com/Johart2546/Jenkins.git'
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: '*/main']],
+                    extensions: [],
+                    userRemoteConfigs: [[
+                        url: 'https://github.com/Johart2546/Jenkins.git',
+                        credentialsId: 'FIREBASE_TOKEN' // ต้องตั้งค่าใน Jenkins ด้วย
+                    ]]
+                ])
             }
         }
 
-        stage('Install Dependencies') {
+        stage('Install & Build') {
             steps {
-                sh 'npm install'
-            }
-        }
-
-        stage('Build Project') {
-            steps {
-                sh 'npm run build' // สำหรับ Vite จะสร้างไฟล์ใน /dist
+                sh '''
+                    npm install
+                    npm run build
+                '''
+                // ตรวจสอบว่ามีไฟล์ Build จริง
+                script {
+                    if (!fileExists('dist/index.html')) {
+                        error('Build Failed: dist/index.html not found!')
+                    }
+                }
             }
         }
 
@@ -34,14 +48,14 @@ pipeline {
     post {
         success {
             slackSend(
-                channel: '#your-channel',
-                message: "Deploy สำเร็จ: ${env.BUILD_URL}\nHosting URL: https://jenkins-2xd8.web.app"
+                channel: '#deploy-notify',
+                message: "✅ Deploy สำเร็จ!\nURL: https://your-project.web.app"
             )
         }
         failure {
             slackSend(
-                channel: '#your-channel',
-                message: "Deploy ล้มเหลว: ${env.BUILD_URL}"
+                channel: '#deploy-notify',
+                message: "❌ Deploy ล้มเหลว!\nดู Log: ${env.BUILD_URL}"
             )
         }
     }
