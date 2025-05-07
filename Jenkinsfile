@@ -1,42 +1,46 @@
 pipeline {
     agent any
 
+    tools {
+        nodejs 'node20'  // ต้องตรงกับชื่อ NodeJS ใน Jenkins tools
+    }
+
     environment {
-        FIREBASE_TOKEN = credentials('FIREBASE_TOKEN')
-        PATH = "/usr/local/bin:/usr/bin:/bin:/usr/local/nodejs/bin:$PATH"  // เพิ่ม path ของ npm
+        FIREBASE_TOKEN = credentials('firebase-token')
     }
 
     stages {
-        stage('Checkout Code') {
+        stage('Clone') {
             steps {
+                echo "Cloning repo....."
                 checkout scm
             }
         }
 
         stage('Install Dependencies') {
             steps {
-                sh '''
-                    echo "PATH: $PATH"  // สำหรับ debug
-                    which npm         // ตรวจสอบ path ของ npm
-                    npm install
-                '''
-            }
-        }
-
-        stage('Build Project') {
-            steps {
-                sh 'npm run build'
-                script {
-                    if (!fileExists('dist/index.html')) {
-                        error('Build failed: dist/index.html not found!')
-                    }
+                dir('Frontend') {
+                    echo "Installing node modules..."
+                    sh 'npm install'
                 }
             }
         }
 
-        stage('Deploy to Firebase') {
+        stage('Build') {
             steps {
-                sh 'firebase deploy --token $FIREBASE_TOKEN --non-interactive'
+                dir('Frontend') {
+                    echo "Building project..."
+                    sh 'npx vite build'
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                dir('Frontend') {
+                    echo "Deploying to Firebase....."
+                    sh 'npx firebase deploy --only hosting --token=$FIREBASE_TOKEN'
+                }
             }
         }
     }
